@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerenciamento de Veículos</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f4; }
+        .container { max-width: 900px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        h1, h2 { color: #333; }
+        form div { margin-bottom: 10px; }
+        label { display: inline-block; width: 120px; }
+        input[type="text"], input[type="number"], input[type="checkbox"] { width: calc(100% - 130px); padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+        button { padding: 10px 15px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background-color: #0056b3; }
+        .veiculo-list { margin-top: 20px; }
+        .veiculo-card { background: #e9ecef; padding: 15px; margin-bottom: 10px; border-radius: 5px; display: flex; justify-content: space-between; align-items: center; }
+        .veiculo-card button { margin-left: 10px; background-color: #dc3545; }
+        .veiculo-card button:hover { background-color: #c82333; }
+        .veiculo-card .edit-button { background-color: #ffc107; color: #333; }
+        .veiculo-card .edit-button:hover { background-color: #e0a800; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Gerenciamento de Veículos</h1>
+
+        <h2>Adicionar/Editar Veículo</h2>
+        <form id="veiculoForm">
+            <input type="hidden" id="veiculoId">
+            <div>
+                <label for="marca">Marca:</label>
+                <input type="text" id="marca" required>
+            </div>
+            <div>
+                <label for="modelo">Modelo:</label>
+                <input type="text" id="modelo" required>
+            </div>
+            <div>
+                <label for="ano">Ano:</label>
+                <input type="number" id="ano" required>
+            </div>
+            <div>
+                <label for="preco">Preço:</label>
+                <input type="number" id="preco" step="0.01" required>
+            </div>
+            <div>
+                <label for="cor">Cor:</label>
+                <input type="text" id="cor">
+            </div>
+            <div>
+                <label for="tipoCarroceria">Tipo Carroceria:</label>
+                <input type="text" id="tipoCarroceria">
+            </div>
+            <div>
+                <label for="placa">Placa:</label>
+                <input type="text" id="placa">
+            </div>
+            <div>
+                <label for="disponivelParaVenda">Disponível para Venda:</label>
+                <input type="checkbox" id="disponivelParaVenda" checked>
+            </div>
+            <button type="submit">Salvar Veículo</button>
+            <button type="button" id="cancelEditButton" class="hidden">Cancelar Edição</button>
+        </form>
+
+        <h2>Veículos Disponíveis</h2>
+        <div id="veiculoList" class="veiculo-list">
+            </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:8080/api/veiculos';
+        const veiculoForm = document.getElementById('veiculoForm');
+        const veiculoIdInput = document.getElementById('veiculoId');
+        const marcaInput = document.getElementById('marca');
+        const modeloInput = document.getElementById('modelo');
+        const anoInput = document.getElementById('ano');
+        const precoInput = document.getElementById('preco');
+        const corInput = document.getElementById('cor');
+        const tipoCarroceriaInput = document.getElementById('tipoCarroceria');
+        const placaInput = document.getElementById('placa');
+        const disponivelParaVendaInput = document.getElementById('disponivelParaVenda');
+        const veiculoListDiv = document.getElementById('veiculoList');
+        const saveButton = veiculoForm.querySelector('button[type="submit"]');
+        const cancelEditButton = document.getElementById('cancelEditButton');
+
+        // Função para carregar e exibir os veículos
+        async function fetchVeiculos() {
+            try {
+                const response = await fetch(API_BASE_URL);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const veiculos = await response.json();
+                renderVeiculos(veiculos);
+            } catch (error) {
+                console.error('Erro ao buscar veículos:', error);
+                veiculoListDiv.innerHTML = '<p>Erro ao carregar veículos. Tente novamente mais tarde.</p>';
+            }
+        }
+
+        // Função para renderizar a lista de veículos
+        function renderVeiculos(veiculos) {
+            veiculoListDiv.innerHTML = '';
+            if (veiculos.length === 0) {
+                veiculoListDiv.innerHTML = '<p>Nenhum veículo cadastrado ainda.</p>';
+                return;
+            }
+            veiculos.forEach(veiculo => {
+                const veiculoCard = document.createElement('div');
+                veiculoCard.className = 'veiculo-card';
+                veiculoCard.innerHTML = `
+                    <div>
+                        <strong>${veiculo.marca} ${veiculo.modelo} (${veiculo.ano})</strong><br>
+                        Preço: R$ ${veiculo.preco.toFixed(2)}<br>
+                        Cor: ${veiculo.cor || 'N/A'} | Placa: ${veiculo.placa || 'N/A'}<br>
+                        Disponível: ${veiculo.disponivelParaVenda ? 'Sim' : 'Não'}
+                    </div>
+                    <div>
+                        <button class="edit-button" data-id="${veiculo.id}">Editar</button>
+                        <button data-id="${veiculo.id}">Excluir</button>
+                    </div>
+                `;
+                veiculoListDiv.appendChild(veiculoCard);
+            });
+            addEventListenersToButtons();
+        }
+
+        // Adiciona event listeners para os botões de editar e excluir
+        function addEventListenersToButtons() {
+            document.querySelectorAll('.veiculo-card button').forEach(button => {
+                button.onclick = async (event) => {
+                    const id = event.target.dataset.id;
+                    if (event.target.textContent === 'Excluir') {
+                        if (confirm(`Tem certeza que deseja excluir o veículo ${id}?`)) {
+                            await deleteVeiculo(id);
+                        }
+                    } else if (event.target.textContent === 'Editar') {
+                        await editVeiculo(id);
+                    }
+                };
+            });
+        }
+
+        // Função para adicionar ou atualizar veículo
+        veiculoForm.onsubmit = async (event) => {
+            event.preventDefault();
+
+            const veiculoData = {
+                marca: marcaInput.value,
+                modelo: modeloInput.value,
+                ano: parseInt(anoInput.value),
+                preco: parseFloat(precoInput.value),
+                cor: corInput.value,
+                tipoCarroceria: tipoCarroceriaInput.value,
+                placa: placaInput.value,
+                disponivelParaVenda: disponivelParaVendaInput.checked
+            };
+
+            const veiculoId = veiculoIdInput.value;
+            let url = API_BASE_URL;
+            let method = 'POST';
+
+            if (veiculoId) { // Se há um ID, é uma edição (PUT)
+                url = `${API_BASE_URL}/${veiculoId}`;
+                method = 'PUT';
+            }
+
+            try {
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(veiculoData)
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
+                }
+
+                clearForm();
+                fetchVeiculos(); // Recarrega a lista
+            } catch (error) {
+                console.error('Erro ao salvar veículo:', error);
+                alert('Ocorreu um erro ao salvar o veículo. Verifique os dados e tente novamente.');
+            }
+        };
+
+        // Função para preencher o formulário para edição
+        async function editVeiculo(id) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/${id}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const veiculo = await response.json();
+
+                veiculoIdInput.value = veiculo.id;
+                marcaInput.value = veiculo.marca;
+                modeloInput.value = veiculo.modelo;
+                anoInput.value = veiculo.ano;
+                precoInput.value = veiculo.preco;
+                corInput.value = veiculo.cor;
+                tipoCarroceriaInput.value = veiculo.tipoCarroceria;
+                placaInput.value = veiculo.placa;
+                disponivelParaVendaInput.checked = veiculo.disponivelParaVenda;
+
+                saveButton.textContent = 'Atualizar Veículo';
+                cancelEditButton.classList.remove('hidden');
+                window.scrollTo({ top: 0, behavior: 'smooth' }); // Rola para o topo para o formulário
+            } catch (error) {
+                console.error('Erro ao buscar veículo para edição:', error);
+                alert('Erro ao carregar dados do veículo para edição.');
+            }
+        }
+
+        // Função para deletar um veículo
+        async function deleteVeiculo(id) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/${id}`, {
+                    method: 'DELETE'
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                fetchVeiculos(); // Recarrega a lista
+            } catch (error) {
+                console.error('Erro ao deletar veículo:', error);
+                alert('Ocorreu um erro ao deletar o veículo.');
+            }
+        }
+
+        // Função para limpar o formulário
+        function clearForm() {
+            veiculoIdInput.value = '';
+            veiculoForm.reset();
+            disponivelParaVendaInput.checked = true; // Garante que volta ao padrão
+            saveButton.textContent = 'Salvar Veículo';
+            cancelEditButton.classList.add('hidden');
+        }
+
+        // Event listener para o botão de cancelar edição
+        cancelEditButton.onclick = clearForm;
+
+        // Carrega os veículos ao iniciar a página
+        document.addEventListener('DOMContentLoaded', fetchVeiculos);
+    </script>
+</body>
+</html>
