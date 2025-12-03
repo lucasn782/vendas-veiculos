@@ -1,7 +1,7 @@
-package com.seuprojeto.vendasveiculos.service;
+package com.veiculos.vendasveiculos.service;
 
-import com.seuprojeto.vendasveiculos.model.Veiculo;
-import com.seuprojeto.vendasveiculos.repository.VeiculoRepository;
+import com.veiculos.vendasveiculos.model.Veiculo;
+import com.veiculos.vendasveiculos.repository.VeiculoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 

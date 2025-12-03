@@ -1,6 +1,6 @@
-package com.seuprojeto.vendasveiculos.repository;
+package com.veiculos.vendasveiculos.repository;
 
-import com.seuprojeto.vendasveiculos.model.Veiculo;
+import com.veiculos.vendasveiculos.model.Veiculo;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

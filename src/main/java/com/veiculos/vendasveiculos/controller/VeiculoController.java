@@ -1,7 +1,7 @@
-package com.seuprojeto.vendasveiculos.controller;
+package com.veiculos.vendasveiculos.controller;
 
-import com.seuprojeto.vendasveiculos.model.Veiculo;
-import com.seuprojeto.vendasveiculos.service.VeiculoService;
+import com.veiculos.vendasveiculos.model.Veiculo;
+import com.veiculos.vendasveiculos.service.VeiculoService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

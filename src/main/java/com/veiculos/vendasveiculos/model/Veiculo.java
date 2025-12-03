@@ -1,4 +1,4 @@
-package com.seuprojeto.vendasveiculos.model;
+package com.veiculos.vendasveiculos.model;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
